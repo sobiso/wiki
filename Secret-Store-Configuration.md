@@ -173,19 +173,28 @@ That said, here's the actions required to start nodes set change session:
 One last note about this session: the key can be lost forever, if number of nodes falls below `t+1` as a result of this session. So avoid situations when there are a lot of isolated nodes or there's a lot of nodes being removed without replacement. *And choose key threshold wisely*.
 
 ## Nodes set contracts
-There's a way to read list of other nodes from the blockchain contract, instead of configuration file. There are two types of such contracts: with and without auto-migration support. Both types of contract must be registered in the Registry under `secretstore_server_set` name.
+There's a way to read list of other nodes from the blockchain contract, instead of configuration file. There are two types of such contracts: with and without auto-migration support. Both contracts are supporting at most 256 key servers.
 
 ### Nodes set contracts without auto-migration support
-This type of contract is suitable for cases, when you do not bother with running [nodes set change session](#changing-servers-set-configuration), or you're running it manually. The contract must implement the following interface:
+This type of contract is suitable for cases, when you do not bother with running [nodes set change session](#changing-servers-set-configuration), or you're going to run it manually. The contract must implement the following interface:
 ```sol
-// Simple key server set.
+/// Simple key server set.
 interface KeyServerSet {
-	// Get all current key servers.
-	function getCurrentKeyServers() public constant returns (address[]);
-	// Get current key server public key.
-	function getCurrentKeyServerPublic(address keyServer) public constant returns (bytes);
-	// Get current key server address.
-	function getCurrentKeyServerAddress(address keyServer) public constant returns (string);
+	/// Get number of block when current set has been changed last time.
+	function getCurrentLastChange() external view returns (uint256);
+	/// Get index of given key server in current set.
+	function getCurrentKeyServerIndex(address keyServer) external view returns (uint8);
+	/// Get count of key servers in current set.
+	function getCurrentKeyServersCount() external view returns (uint8);
+	/// Get address of key server in current set.
+	function getCurrentKeyServer(uint8 index) external view returns (address);
+
+	/// Get all current key servers.
+	function getCurrentKeyServers() external view returns (address[]);
+	/// Get current key server public key.
+	function getCurrentKeyServerPublic(address keyServer) external view returns (bytes);
+	/// Get current key server address.
+	function getCurrentKeyServerAddress(address keyServer) external view returns (string);
 }
 ```
 
@@ -194,52 +203,61 @@ The `disable_auto_migrate` must be set to `true` in configuration file, if you'r
 ### Nodes set contracts with auto-migration support
 This type of contract is used when you want to auto-start [nodes set change session](#changing-servers-set-configuration) (auto migration), when nodes set changes. The contract must implement the following interface:
 ```sol
-// Key server set with migration support.
+/// Key server set with migration support.
 interface KeyServerSetWithMigration {
-	// When new server is added to new set.
+	/// When new server is added to new set.
 	event KeyServerAdded(address keyServer);
-	// When existing server is removed from new set.
+	/// When existing server is removed from new set.
 	event KeyServerRemoved(address keyServer);
-	// When migration is started.
+	/// When migration is started.
 	event MigrationStarted();
-	// When migration is completed.
+	/// When migration is completed.
 	event MigrationCompleted();
 
-	// Get all current key servers.
-	function getCurrentKeyServers() public constant returns (address[]);
-	// Get current key server public key.
-	function getCurrentKeyServerPublic(address keyServer) public constant returns (bytes);
-	// Get current key server address.
-	function getCurrentKeyServerAddress(address keyServer) public constant returns (string);
+	/// Get number of block when current set has been changed last time.
+	function getCurrentLastChange() external view returns (uint256);
+	/// Get index of given key server in current set.
+	function getCurrentKeyServerIndex(address keyServer) external view returns (uint8);
+	/// Get count of key servers in current set.
+	function getCurrentKeyServersCount() external view returns (uint8);
+	/// Get address of key server in current set.
+	function getCurrentKeyServer(uint8 index) external view returns (address);
 
-	// Get all migration key servers.
-	function getMigrationKeyServers() public constant returns (address[]);
-	// Get migration key server public key.
-	function getMigrationKeyServerPublic(address keyServer) public constant returns (bytes);
-	// Get migration key server address.
-	function getMigrationKeyServerAddress(address keyServer) public constant returns (string);
+	/// Get all current key servers.
+	function getCurrentKeyServers() external view returns (address[]);
+	/// Get current key server public key.
+	function getCurrentKeyServerPublic(address keyServer) external view returns (bytes);
+	/// Get current key server address.
+	function getCurrentKeyServerAddress(address keyServer) external view returns (string);
 
-	// Get all new key servers.
-	function getNewKeyServers() public constant returns (address[]);
-	// Get new key server public key.
-	function getNewKeyServerPublic(address keyServer) public constant returns (bytes);
-	// Get new key server address.
-	function getNewKeyServerAddress(address keyServer) public constant returns (string);
+	/// Get all migration key servers.
+	function getMigrationKeyServers() external view returns (address[]);
+	/// Get migration key server public key.
+	function getMigrationKeyServerPublic(address keyServer) external view returns (bytes);
+	/// Get migration key server address.
+	function getMigrationKeyServerAddress(address keyServer) external view returns (string);
 
-	// Get migration id.
-	function getMigrationId() public view returns (bytes32);
-	// Get migration master.
-	function getMigrationMaster() public constant returns (address);
-	// Is migration confirmed by given node?
-	function isMigrationConfirmed(address keyServer) public view returns (bool);
-	// Start migration.
-	function startMigration(bytes32 id) public;
-	// Confirm migration.
-	function confirmMigration(bytes32 id) public;
+	/// Get all new key servers.
+	function getNewKeyServers() external view returns (address[]);
+	/// Get new key server public key.
+	function getNewKeyServerPublic(address keyServer) external view returns (bytes);
+	/// Get new key server address.
+	function getNewKeyServerAddress(address keyServer) external view returns (string);
+
+	/// Get migration id.
+	function getMigrationId() external view returns (bytes32);
+	/// Get migration master.
+	function getMigrationMaster() external view returns (address);
+	/// Is migration confirmed by given node?
+	function isMigrationConfirmed(address keyServer) external view returns (bool);
+	/// Start migration.
+	function startMigration(bytes32 id) external;
+	/// Confirm migration.
+	function confirmMigration(bytes32 id) external;
 }
 ```
 
-For example implementation, see [SetOwnedWithMigration.sol](https://github.com/svyatonik/contracts/blob/94891dbacf2be8edc497396e41add21117b63359/contracts/SetOwnedWithMigration.sol). The `disable_auto_migrate` must be set to `false` in configuration file, if you're using this type of the contract.
+For implementation of this contract, please refer to [SetOwnedWithMigration.sol](https://github.com/parity-contracts/secretstore-key-server-set/blob/cf2d4cb4becf7a71686b2d66fa34ac4c5a46d610/contracts/SetOwnedWithMigration.sol). The `disable_auto_migrate` must be set to `false` in configuration file, if you're using this type of the contract.
 
 ## Secret Store service contracts
 In addition to Secret Store HTTP API (or as its replacement), there could be a blockchain contract, which is used to provide the same Secret Store functionality. The contract and related functionality is currently under development and only one API method is available - [Server key generation session](Secret-Store.md#server-key-generation-session).
