@@ -56,7 +56,7 @@ nodes = ["165872fc7999f12f8d5a4156d8cf95cdd363ab2dffb53effcef926863beead042e926d
 ```
 Format of node connection is `public_key_of_the_node@node_address`.
 
-The main disadvantage of hardcoded list is that if you need to change nodes set, you have to stop all nodes, change their configuration files and finally restart. Another option is to use blockchain contract to configure nodes set (see [Nodes set contracts](#nodes-set-contracts)). To configure nodes set contract, you could use following option in the configuration file:
+The main disadvantage of hardcoded list is that if you need to change nodes set, you have to stop all nodes, change their configuration files and finally restart. Another option is to use blockchain contract to configure the set (see [Nodes set contracts](#nodes-set-contracts)), by using following option in the configuration file:
 ```toml
 [secretstore]
 server_set_contract = "registry"
