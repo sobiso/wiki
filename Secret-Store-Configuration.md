@@ -259,9 +259,96 @@ interface KeyServerSetWithMigration {
 
 For implementation of this contract, please refer to [SetOwnedWithMigration.sol](https://github.com/parity-contracts/secretstore-key-server-set/blob/cf2d4cb4becf7a71686b2d66fa34ac4c5a46d610/contracts/SetOwnedWithMigration.sol). The `disable_auto_migrate` must be set to `false` in configuration file, if you're using this type of the contract.
 
+There are 3 sets of servers in this contract: current (this is a set, which is currently responsible for serving SS requests), new (all changes should be made here) and migration (not empty during migration process). Auto migration starts when one of key servers from current set sees that there are changes in new set, when comparing to current set. Migration starts when `startMigration` method is called. After migration is started, key servers are running [nodes set change session](#changing-servers-set-configuration). When it completes, every key server from migration set confirms that migration has completed by calling the `confirmMigration` method.
+
+Please notice, that nodes are sending transactions to this contract. So make sure that every node (from 'current', 'new' and 'migration' sets) has enough ETH to cover the gas costs. Otherwise, migration can never start or never complete.
+
 ## Secret Store service contracts
-In addition to Secret Store HTTP API (or as its replacement), there could be a blockchain contract, which is used to provide the same Secret Store functionality. The contract and related functionality is currently under development and only one API method is available - [Server key generation session](Secret-Store.md#server-key-generation-session).
+There are two kind of participants, sending transactions to service contracts:
+- SS clients, wanting to access SS API;
+- SS nodes, responding to service contracts requests.
 
-To try it, please deploy contract from [SecretStoreServiceFixed.sol](https://github.com/svyatonik/contracts/blob/94891dbacf2be8edc497396e41add21117b63359/SecretStoreServiceFixed.sol) and register it under `secretstore_service` name in the Registry. Add following configuration option to all nodes configuration files: `service_contract = "registry"`. Now you can try to call `generateServerKey` method on the contract and public portion of the server key will be published via `ServerKeyGenerated` event within few blocks.
+This implies different contract interfaces for different participant types - one is 'ClientApi' and the other is 'KeyServerApi'. Key servers are sending transactions to service contract, so please make sure that key servers accounts has enough ether to cover gas costs. [Reference implementation]
+(https://github.com/parity-contracts/secretstore-service/pull/1/files) of service contracts requires a fee to be paid for every request. The fee is splitted among all key servers and can be transferred to their accounts by calling 'drain' method. This can be used as a source of ETH to pay transactions costs.
 
-Please note that for this contract to work, nodes keys must be the same in configuration file and in `SecretStoreService` constructor.
+Here we will consider 'ClientApi' interfaces only. One common thing about these interfaces is that they all have single method to register request and one or two events, signalling that request has been served. There's always additional event, signalling that request has failed. It doesn't log the real reason behind the failure, though - you can only find it in nodes logs.
+
+Another important notice is that [reference implementation](https://github.com/parity-contracts/secretstore-service/pull/1/files) reads the list of key servers from [nodes set contract](#nodes-set-contracts). So you'll be unable to use service contracts when nodes set is configured in the configuration file.
+
+### Server Key generation service contract
+The client API is straightforward - just call the `generateServerKey` method and wait until key is either generated (`ServerKeyGenerated`), or generation error occurs (`ServerKeyGenerationError`):
+```sol
+/// Server Key generation service contract API (client view).
+interface ServerKeyGenerationServiceClientApi {
+	/// When server key is generated.
+	event ServerKeyGenerated(bytes32 indexed serverKeyId, bytes serverKeyPublic);
+	/// When error occurs during server key generation.
+	event ServerKeyGenerationError(bytes32 indexed serverKeyId);
+
+	/// Request new server key generation. Generated key will be published via ServerKeyGenerated event when available.
+	function generateServerKey(bytes32 serverKeyId, uint8 threshold) external payable;
+}
+```
+
+### Server Key retrieval service contract
+The client API is straightforward - just call the `retrieveServerKey` method and wait until key is either retrieved (`ServerKeyRetrieved`), or generation error occurs (`ServerKeyRetrievalError`):
+```sol
+/// Server Key retrieval service contract API (client view).
+interface ServerKeyRetrievalServiceClientApi {
+	/// When server key is retrieved.
+	event ServerKeyRetrieved(bytes32 indexed serverKeyId, bytes serverKeyPublic, uint256 threshold);
+	/// When error occurs during server key retrieval.
+	event ServerKeyRetrievalError(bytes32 indexed serverKeyId);
+
+	/// Retrieve existing server key. Retrieved key will be published via ServerKeyRetrieved or ServerKeyRetrievalError.
+	function retrieveServerKey(bytes32 serverKeyId) external payable;
+}
+```
+
+### Document Key store service contract
+The client API is straightforward - just call the `storeDocumentKey` method and wait until key is either stored (`DocumentKeyStored`), or storing error occurs (`DocumentKeyStoreError`):
+```sol
+/// Document Key store service contract API (client view).
+interface DocumentKeyStoreServiceClientApi {
+	/// When document key is stored.
+	event DocumentKeyStored(bytes32 indexed serverKeyId);
+	/// When error occurs during document key store.
+	event DocumentKeyStoreError(bytes32 indexed serverKeyId);
+
+	/// Request document key store. Use `secretstore_generateDocumentKey` RPC to generate both
+	/// `commonPoint` and `encryptedPoint`.
+	function storeDocumentKey(bytes32 serverKeyId, bytes commonPoint, bytes encryptedPoint) external payable;
+}
+```
+
+### Document Key shadow retrieval service contract
+In this client API, request is registered by calling the `retrieveDocumentKeyShadow` method. Retrieval consists of two stages: at first, 'common' data is retrieved and published via `DocumentKeyCommonRetrieved` event. Common data includes `commonPoint` and `threshold`. After common data is retrieved, the client must listen for `DocumentKeyPersonalRetrieved` events. Once there are exactly `threshold+1` events with **the same** `decryptedSecret` value, you could pass `commonPoint`, `decryptedSecret` and all `shadows` from gathered `DocumentKeyPersonalRetrieved` events to `secretstore_shadowDecrypt` RPC method to decrypt encrypted data.
+```sol
+/// Document Key shadow retrieval service contract API (client view).
+interface DocumentKeyShadowRetrievalServiceClientApi {
+	/// When document key common portion is retrieved. Ater this event s fired, wait for
+	/// exactly `threshold+1` `DocumentKeyPersonalRetrieved` events with the same `decryptedSecret` value.
+	event DocumentKeyCommonRetrieved(bytes32 indexed serverKeyId, address indexed requester, bytes commonPoint, uint8 threshold);
+	/// When document key personal portion is retrieved. After enough events are fired, use `secretstore_shadowDecrypt`
+	/// to decrypt document contents.
+	event DocumentKeyPersonalRetrieved(bytes32 indexed serverKeyId, address indexed requester, bytes decryptedSecret, bytes shadow);
+	/// When error occurs during document key retrieval.
+	event DocumentKeyShadowRetrievalError(bytes32 indexed serverKeyId, address indexed requester);
+
+	/// Request document key retrieval.
+	function retrieveDocumentKeyShadow(bytes32 serverKeyId, bytes requesterPublic) external payable;
+}
+```
+
+### ECDSA signature generation contract
+*In development*
+
+### Service contracts on Kovan
+All service contracts, described above, are deployed on Kovan testnet (**testnet means that it should be used for tests only - please do not rely on this as an infrastructure for your non-test applications**). This gives you an ability to store encryption keys even without deploying your own Secret Store. Here's the information required to use these contracts:
+- latest deployment information (including service contract addresses) can be found in [secretstore-service](https://github.com/parity-contracts/secretstore-service/blob/165b6083c5f29d8baa01bffad5e0a7d7b365dae0/README.md) repository;
+- there are currently 5 key servers deployed (so maximum `threshold` is 4);
+- all deployed key servers are configured to use [OnceTransferablePermission.sol](https://github.com/parity-contracts/secretstore-acl/blob/17dd8f3f97f601723b3e13f11d515e4ebb457b95/contracts/OnceTransferablePermission.sol) permissioning contract (it is a contract with artificially limited abilities to use in tests only), with deployment data published [here](https://github.com/parity-contracts/secretstore-acl/blob/17dd8f3f97f601723b3e13f11d515e4ebb457b95/README.md). So, before generating key with new ID, please make sure that you have 'reserved' (called `createKey`) the key id for your own account;
+- processing requests could take some time (up to 10 blocks for [Document Key shadow retrieval](#document-key-shadow-retrieval-service-contract) requests and 4-5 blocks for all other requests). It could be even more, when key server misses the request (because of synchronization). The general rule - if your request haven't processed for >100 blocks, then something is definitely wrong;
+- you are not the only user of this Secret Store, so expect keys with IDs like '0x0000000000000000000000000000000000000000000000000000000000000001' to be occupied and some requests to fail because of this.
+
+If you experiencing any problems with service contracts on Kovan, please report at [Parity Support](https://riot.im/app/#/room/#support:matrix.parity.io).
