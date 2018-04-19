@@ -145,7 +145,7 @@ function checkPermissions(address user, bytes32 document) constant returns (bool
 ```
 Returning `true` means that the owner of `user` address has an access to the server key with server key id `document`.
 
-This contract must be registered under `secretstore_acl_checker` name in the Registry.
+The contract address is specified in `acl_contract` parameter of the configuration file (by default it is read from the `secretstore_acl_checker` entry in the Registry).
 
 ### Document key shadow retrieval session
 This session is a preferrable way of retrieving previously generated document key. To run this session, you will need to prepare following parameters:

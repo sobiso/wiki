@@ -56,9 +56,18 @@ nodes = ["165872fc7999f12f8d5a4156d8cf95cdd363ab2dffb53effcef926863beead042e926d
 ```
 Format of node connection is `public_key_of_the_node@node_address`.
 
-The main disadvantage of hardcoded list is that if you need to change nodes set, you have to stop all nodes, change their configuration files and finally restart. Another option is to use blockchain contract to configure nodes set (see [Nodes set contracts](#nodes-set-contracts)).
+The main disadvantage of hardcoded list is that if you need to change nodes set, you have to stop all nodes, change their configuration files and finally restart. Another option is to use blockchain contract to configure nodes set (see [Nodes set contracts](#nodes-set-contracts)). To configure nodes set contract, you could use following option in the configuration file:
+```toml
+[secretstore]
+server_set_contract = "registry"
+```
 
-### Configuring Secret Store API
+There are four possible values for this option:
+- `"none"` - nodes set will be read from the `nodes` configuration option;
+- `"registry"` - nodes set contract address will be read from `server_set_contract` entry in the Registry;
+- `address` - this node will be configured for the nodes set contract, residing at given address.
+
+### Configuring Secret Store HTTP API
 Secret Store HTTP API is enabled by default on `local` interface and port `8082`. To change these settings, use following configuration options:
 ```toml
 [secretstore]
@@ -69,7 +78,40 @@ http_port = 12001
 
 You can disable HTTP API by setting `disable_http` option to `true`.
 
-The same API can be provided using blockchain contract (see [Secret Store API contract](#secret-store-api-contract)).
+### Configuring Secret Store service contract API
+As an aternative way to provide Secret Store API, you can deploy a set of service contracts on the blockchain and Secret Store will serve requests, coming to these contracts. There are currently four configuration options for these contracts:
+```toml
+[secretstore]
+service_contract_srv_gen = "50D59af572FF790D665C339E60128C511c2656f0"
+service_contract_srv_retr = "registry"
+service_contract_doc_store = "none"
+service_contract_doc_sretr = "registry"
+```
+
+Every service contract is responsible for providing access to the single type of sessions:
+`service_contract_srv_gen` - allows its clients to start [Server key generation session](Secret-Store.md#server-key-generation-session);
+`service_contract_srv_retr` - allows its clients to start Server key retrieval session;
+`service_contract_doc_store` - allows its clients to start [Document key storing session](Secret-Store.md#document-key-storing-session);
+`service_contract_doc_sretr` - allows its clients to start [Document key shadow retrieval session](Secret-Store.md#document-key-shadow-retrieval-session).
+
+Every option can have following values:
+- `"none"` - this node won't serve requests coming from this kind of a contract;
+- `"registry"` - contract address will be read from registry (entries are named: `secretstore_service_srv_gen`, `secretstore_service_srv_retr`, `secretstore_service_doc_store` and `secretstore_service_doc_sretr` accordingly);
+- `address` - this node will listen to requests from the contract, residing at given address.
+
+For more information on how every contract works, please refer to [Secret Store service contracts](#secret-store-service-contracts)
+
+### Configuring Secret Store permissioning contract
+There's an option to configure address of permissioning contract in Secret Store:
+```toml
+[secretstore]
+acl_contract = "registry"
+```
+
+This option can have 3 values:
+- `"none"` - node will be configured to work without actual permissions check. This means that it will hand out its keys shares to anyone who will request it. **This mode is intended for tests and must NOT be used in production**;
+- `"registry"` - permissioning contract address will be read from `secretstore_acl_checker` entry in the Registry;;
+- `address` - permissioning contract resides at given address.
 
 ### Example configuration file
 Examples of different configuration files and scripts for their generation can be found in [Secret Store tests](https://github.com/svyatonik/sstore_test) repository. Here's single configuration file example:
@@ -199,7 +241,7 @@ interface KeyServerSetWithMigration {
 
 For example implementation, see [SetOwnedWithMigration.sol](https://github.com/svyatonik/contracts/blob/94891dbacf2be8edc497396e41add21117b63359/contracts/SetOwnedWithMigration.sol). The `disable_auto_migrate` must be set to `false` in configuration file, if you're using this type of the contract.
 
-## Secret Store API contract
+## Secret Store service contracts
 In addition to Secret Store HTTP API (or as its replacement), there could be a blockchain contract, which is used to provide the same Secret Store functionality. The contract and related functionality is currently under development and only one API method is available - [Server key generation session](Secret-Store.md#server-key-generation-session).
 
 To try it, please deploy contract from [SecretStoreServiceFixed.sol](https://github.com/svyatonik/contracts/blob/94891dbacf2be8edc497396e41add21117b63359/SecretStoreServiceFixed.sol) and register it under `secretstore_service` name in the Registry. Add following configuration option to all nodes configuration files: `service_contract = "registry"`. Now you can try to call `generateServerKey` method on the contract and public portion of the server key will be published via `ServerKeyGenerated` event within few blocks.
