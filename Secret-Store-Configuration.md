@@ -128,7 +128,7 @@ That said, here's the actions required to start nodes set change session:
 7) change configuration files so that only nodes from 'new set' are fully connected;
 8) start all nodes from 'new set'.
 
-One last note about this session: it will fail if there is at least one server key, which is irrecoverable or which will became irrecoverable after nodes set change session. So avoid situations when there are a lot of isolated nodes or there's a lot of nodes being removed without replacement. *And choose key threshold wisely*.
+One last note about this session: the key can be lost forever, if number of nodes falls below `t+1` as a result of this session. So avoid situations when there are a lot of isolated nodes or there's a lot of nodes being removed without replacement. *And choose key threshold wisely*.
 
 ## Nodes set contracts
 There's a way to read list of other nodes from the blockchain contract, instead of configuration file. There are two types of such contracts: with and without auto-migration support. Both types of contract must be registered in the Registry under `secretstore_server_set` name.
