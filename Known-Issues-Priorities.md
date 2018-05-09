@@ -5,7 +5,7 @@ title: Parity Known Issues and Priorities Overview
 This could become some kind of a rough roadmap document if well discussed and continuously maintained. If not stated otherwise, everything is sorted by priority in this document (descending). 
 
 - If this list is ever exhausted, there is also the automatically generated priority list here: [5chdn.co/parity](https://5chdn.co/parity/priority.html). 
-- The 1.10 release tracker issue can be found here: [#7699](https://github.com/paritytech/parity/issues/7699).
+- The 1.11 release tracker issue can be found here: [#8190](https://github.com/paritytech/parity/issues/8190).
 
 ## Painful Bugs and Real Annoyances
 
@@ -20,12 +20,13 @@ Trying to prioritize stuff here. While bridging the gap to a stable light client
 - [ ] 5. [#7436](https://github.com/paritytech/parity/issues/7436) Look into why snapshotting fails on nodes with low memory. We won't be able to produce snapshots with OverlayRecent pruning; we should look into enabling a different pruning algorithm that does not require keeping recent states in memory.
 - [ ] 6. [#7177](https://github.com/paritytech/parity/issues/7177) Figure out why fast sync sometimes just stops in the middle. This is probably obsolete if we address the first 3 points in this list.
 - [ ] 7. [#7008](https://github.com/paritytech/parity/issues/7008) Figure out why ancient-blocks download sometimes stalls. Ancient blocks are important to serve the network as a full node.
-- [ ] 8. [#6956](https://github.com/paritytech/parity/issues/6956) Provide RPC health status indicator for ancient blocks in addition to sync status.
+- [ ] 8. [#8565](https://github.com/paritytech/parity/issues/8565) We want to investigate new snapshot formats.
+- [ ] 9. [#6956](https://github.com/paritytech/parity/issues/6956) Provide RPC health status indicator for ancient blocks in addition to sync status.
 
 ### 2. Full Sync / Full Node Performance
 
 - [ ] 0. [#7967](https://github.com/paritytech/parity/issues/7967) Significantly reduce Archive Node size.
-- [ ] 1. [#7272](https://github.com/paritytech/parity/issues/7272) Auto-update should be randomly delayed. This is a critical issue because this could cause the whole network (esp. Kovan) to go down once the update was triggered.
+- [x] 1. [#7272](https://github.com/paritytech/parity/issues/7272) Auto-update should be randomly delayed. This is a critical issue because this could cause the whole network (esp. Kovan) to go down once the update was triggered.
 - [ ] 2. [#7865](https://github.com/paritytech/parity/issues/7865) Let's get ParityDB integration done.
 - [ ] 3. [#6593](https://github.com/paritytech/parity/issues/6593) Synchronization should never get stuck.
 - [ ] 4. [#7114](https://github.com/paritytech/parity/issues/7114) Figure out why sync sometimes stalls.
@@ -34,11 +35,11 @@ Trying to prioritize stuff here. While bridging the gap to a stable light client
 ### 3. Light Sync / Light Client
 
 - [ ] 1. [#6319](https://github.com/paritytech/parity/issues/6319) It's currently close to impossible to synchronize a light client. We need to figure out why this happens and fix this.
-- [ ] 2. [#5642](https://github.com/paritytech/parity/issues/5642) Allow light-sync for Kovan/PoA networks.
+- [x] 2. [#5642](https://github.com/paritytech/parity/issues/5642) Allow light-sync for Kovan/PoA networks.
 - [ ] 3. [#6202](https://github.com/paritytech/parity/issues/6202) Enable RPCs for light clients similar to those available in a full node. This will be the ground-work for the light wallet (new UI).
 - [ ] 4. [#6010](https://github.com/paritytech/parity/issues/6010) Allow warp-syncing of light clients.
 - [ ] 5. [#7263](https://github.com/paritytech/parity/issues/7263) Allow syncing the light client from a trusted block hash.
-- [ ] 6. [#6402](https://github.com/paritytech/parity/issues/6402) Light sync issue with stage-3 block verification failed (InvalidDifficulty).
+- [x] 6. [#6402](https://github.com/paritytech/parity/issues/6402) Light sync issue with stage-3 block verification failed (InvalidDifficulty).
 - [ ] 7. [#7116](https://github.com/paritytech/parity/issues/7116) Consider allowing to fetch full-blocks on demand.
 - [ ] 8. [#6155](https://github.com/paritytech/parity/issues/6155) Differentiate between manual throw and natural gas exhaustion.
 - [ ] 9. Consider serving LES peers. Also, discuss if LES light-serving peers (Geth) provide any useful data for PIP light clients (Parity). In general, we should discuss and use similarities between LES and PIP to strengthen the light network.
@@ -46,7 +47,7 @@ Trying to prioritize stuff here. While bridging the gap to a stable light client
 
 ## Long Overdue Features
 
-- [ ] 1. State Change Object support as discussed in [EIP #867](https://github.com/ethereum/EIPs/pull/867).
+- [ ] 1. [#7531](https://github.com/paritytech/parity/issues/7531) Fix the damn peering issues once and for all.
 - [ ] 2. [#7162](https://github.com/paritytech/parity/issues/7162) Casper FFG proof-of-stake engine and testnet support.
 - [ ] 3. A basic light wallet for users to send and receive tokens.
-- [ ] 4. [#4228](https://github.com/paritytech/parity/issues/4228) _A modern Parity._ :)
+- [x] 4. [#4228](https://github.com/paritytech/parity/issues/4228) _A modern Parity._ :)
