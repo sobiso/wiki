@@ -192,10 +192,11 @@ A computer or mobile phone with single core CPU, 512MB RAM and a HDD with 128MB 
 
 Indicative data storage requirement from Mai 2018 syncing Ethereum Mainnet (ETH) with Parity 1.10.0 and Ubuntu 16.4 LTS, VPS instance with SSD backed storage:
 ```
-Client / Mode         | Block Number   | Disk Space
-======================|================|===========
-parity light          | 5_600_000      |  89M
-parity warp fast      | 5_600_000      |  82G
-parity full fast      | 5_600_000      |  78G
-parity full archive   | 5_600_000      | 1.1T
+Client / Mode           | Block Number   | Disk Space | CLI flags                |
+========================|================|============|==========================|
+parity light            | 5_600_000      |  89M       | --light                  |
+parity warp fast        | 5_600_000      |  82G       |                          |
+parity full fast        | 5_600_000      |  78G       | --no-wrap                |
+parity full archive     | 5_600_000      | 1.1T       | --pruning archive        |
+parity full fatdb trace | 5_600_000      | 108G       | --fat-db on --tracing on |
 ```
