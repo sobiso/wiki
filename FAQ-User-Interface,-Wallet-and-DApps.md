@@ -51,7 +51,7 @@ Currently, Parity does neither support Swarm nor Whisper sub-protocols. However,
 
 ## How to connect Parity UI to a node on my network?
 
-You can specify the Websocket IP and Websocket port that the Parity UI will use by launching `parity-ui` using the following flags:
+You can specify the Websocket IP and port that Parity UI should use to connect to a node. To do so, launch `parity-ui` with the following flags:
 ```bash
     --ws-interface=[IP]
         Specify the hostname portion of the WebSockets server 
