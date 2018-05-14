@@ -68,6 +68,7 @@
     - [Aura](Aura)
   - [Validator Set](Validator-Set)
     - [Validator contracts](Validator-contracts)
+  - [Block Reward](Block-Reward)
 - [Permissioning](Permissioning)
 - [Proof of Work Chains](Proof-of-Work-Chains)
 - [Proof of Authority Chains](Proof-of-Authority-Chains)
